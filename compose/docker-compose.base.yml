@@ -64,6 +64,12 @@ services:
   edge:
     image: caddy:2-alpine
     restart: unless-stopped
+    # Caddy runs as PID 1 and never reaps orphaned children. The healthcheck below
+    # runs busybox wget, whose ssl_client helper is orphaned on every failed TLS
+    # handshake - once every 15s - so zombies piled up (4,951 on 2026-10-18, all
+    # ssl_client, all children of caddy). init: true puts tini in front of Caddy to
+    # reap them; Caddy, its config and its certificates are unchanged.
+    init: true
     networks:
       - app
     volumes:
