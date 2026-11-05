@@ -28,7 +28,6 @@ services:
         NEXT_PUBLIC_BASE_URL: https://localhost
         NEXT_PUBLIC_CMS_PROVIDER: payload
         NEXT_PUBLIC_BOT_URL: https://localhost/bot
-        NEXT_PUBLIC_BOT_WEBHOOK_SECRET: local-webhook-secret-min-16
         NEXT_IMAGE_UNOPTIMIZED: "true"
     image: oxytrip-frontend:local
 
