@@ -62,7 +62,10 @@ services:
       start_period: 120s
 
   edge:
-    image: caddy:2-alpine
+    # Review 6 Nov 2026: pinned. caddy:2-alpine moved under us on every pull - the
+    # live edge could change Caddy version (and behaviour) on any `up --pull always`
+    # without a commit. Bump deliberately; caddy validate the Caddyfile on the new one.
+    image: caddy:2.10.2-alpine
     restart: unless-stopped
     # Caddy runs as PID 1 and never reaps orphaned children. The healthcheck below
     # runs busybox wget, whose ssl_client helper is orphaned on every failed TLS
@@ -84,8 +87,8 @@ services:
       panel:
         condition: service_started
     # Caddy has no certificate for 127.0.0.1, so a TLS check against it is reset every time ("ssl_client:
-    # SSL_connect … Connection reset by peer"): the edge showed unhealthy while it served every site (checked
-    # 6 Nov 2026 – oxytrip.com 200). The check now asks only whether Caddy listens on 443 and 80; no TLS, so no
+    # SSL_connect ... Connection reset by peer"): the edge showed unhealthy while it served every site (checked
+    # 6 Nov 2026 - oxytrip.com 200). The check now asks only whether Caddy listens on 443 and 80; no TLS, so no
     # ssl_client helper is left behind either.
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 443 && nc -z 127.0.0.1 80"]
