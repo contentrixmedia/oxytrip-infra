@@ -8,10 +8,24 @@
 
 (common_headers) {
 	header {
+		# Review 6 Nov 2026 - left as is, but know what it commits to: includeSubDomains
+		# makes browsers refuse plain HTTP for EVERY *.oxytrip.com host (b2b, panel, any
+		# future one) for a year after a visit, and "preload" invites submission to the
+		# browser preload list, which is baked into browser releases and takes months to
+		# undo. Before adding a subdomain that cannot serve valid HTTPS, or submitting to
+		# hstspreload.org, decide deliberately.
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# Review 6 Nov 2026: a baseline CSP that restricts nothing the site or panel
+		# loads. No script-src/style-src/connect-src/img-src/frame-src: Next.js inline
+		# hydration scripts, the CMS image hosts, the Google Maps iframes and the bot's
+		# SSE would all need listing, and getting one wrong blanks a live page. These
+		# three only forbid what neither app uses (<object>/<embed>, a <base> tag
+		# rebasing relative URLs to another origin) and repeat X-Frame-Options DENY.
+		# "?" = only if the app did not send its own CSP; an app policy wins.
+		?Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
 	}
 }
 
@@ -25,6 +39,13 @@
 
 	# SSE for the support bot - must not buffer (panel Caddyfile flush_interval -1).
 	handle /bot/* {
+		# Review 6 Nov 2026: GET /setup-webhook (bot/src/bot/whatsapp.ts) has no auth:
+		# any visitor could rewrite the business WhatsApp number's Green API webhook
+		# settings. Closed from outside. If the webhook ever needs setting again, do it
+		# in the Green API console (webhook URL https://PANEL_DOMAIN/bot/webhook/whatsapp).
+		# Inside this handle (not at site level): handle blocks run first and end the
+		# route, so a top-level respond would never be reached for /bot/*.
+		respond /bot/setup-webhook* 404
 		reverse_proxy panel:8080 {
 			flush_interval -1
 		}

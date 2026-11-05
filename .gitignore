@@ -1,4 +1,12 @@
-env/*.env
+# Review 6 Nov 2026: was env/*.env, which let env/frontend.env.bak.<ts> (a full copy
+# of the live secrets, written by scripts/set-google-oauth.sh) show up as untracked
+# and be one `git add .` away from a commit. env/*.env* covers the env files and
+# every backup or temp copy of them; only the examples are tracked.
+env/*.env*
 !env/*.env.example
+# rclone config for the off-site bot backup (holds the remote's credentials).
+env/rclone.conf
+# Local bot database backups (scripts/backup-bot-db.sh): customer chats.
+backups/
 .env
 *.log

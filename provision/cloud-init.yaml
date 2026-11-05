@@ -32,6 +32,13 @@ users:
     shell: /bin/bash
     lock_passwd: true
     sudo: ALL=(ALL) NOPASSWD:ALL
+    # These keys are the ONLY ones installed for deploy (passwordless sudo = root).
+    # Review 6 Nov 2026: runcmd used to overwrite them with provision/authorized_keys
+    # from a fresh, unpinned clone of main, so whoever could push to main at the
+    # moment a droplet booted chose who got root on it. The keys now come only from
+    # this user-data, which is what you paste and review at create time.
+    # provision/authorized_keys must list exactly the same keys (the lint workflow
+    # checks); change both together.
     ssh_authorized_keys:
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIyOV+hdwO6ubPnXvCMDY8wke8KO2deHBLqb6wZ5Eclm sarasepehrirahnama@gmail.com
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDIFWm6lhR9t4E/NXepJeGoO7OxipxA3h1XnS0v6e+9x4ffN5p154F87Y9fQcQ2GUfWcOaR5PqLte1JuqdoTJ3ujhfZQyK02bNRgMUwZTzr8yMGpA6auyk2dOgPoiUjhmcUb4aJeLtGHMfAtxJHprzgYV2ZUix6SH52G9reb5vkyzLRjEq5vldeORPFh4OxRKSaCUL5Uki5Dan2vtSalnLzC0wYrnLn0BKAbeD/V9hG+LDBDLPAvzS3psDLEYwucLyG1SIbmTTD7O57Nr+9ADE1xBsfphj5SiOfln9GX1LyEHCoaOJYF3NxnucVDYsGaDXjjYJ5xIBSwlDEGIxqoXVGW9FkMvHDbHTGPYLvp1+EKLr/BrI+hD0WJCWocLYpV+SnhJdj0ozLtSwp50wbkAhMKm/g+dG6tt/mpt6lk5xQJyKKazQtJE41wwGJGXy6UsSEvBaXMPkGYdtc1kufrtExUslI8t9qe/kC00E8RSoLKXvdlidp2Pc7MtRHi2UvWQGOVIWV4iXhJmony/uIsCrJlYe6/gzIqG2L4J3uoARAVS6ySj8bRy3A8Fr1ICL5I/I+oNsCeyFFRRhoenYx4vaHzorEaHNNYRleMC2yrDdxwHw7sS9SJCuEd7Qt7hnOH2OTwv4FiQBFxnXN5K8HWFRKqw4Nbw+HILru0ps94YHv6Q== sarasepehrirahnama@gmail.com
@@ -146,14 +153,28 @@ runcmd:
   - systemctl restart ssh || systemctl restart sshd
 
   # --- DigitalOcean monitoring agent ---
+  # Review 6 Nov 2026: was `curl ... install.sh | bash` - an unverified script run as
+  # root. Now DigitalOcean's documented apt repository, the same way Docker is
+  # installed above: apt checks every package against the repo's signing key.
+  # (docs.digitalocean.com/products/monitoring/how-to/install-metrics-agent-repository;
+  # the docs use apt-key, which is deprecated - signed-by is the same key.)
   - |
     # Subshell: set -e must not leak into later runcmd items.
     (
     set -eux
-    curl -sSL https://repos.insights.digitalocean.com/install.sh | bash
+    if ! dpkg -s do-agent >/dev/null 2>&1; then
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://repos.insights.digitalocean.com/sonar-agent.asc | gpg --dearmor -o /etc/apt/keyrings/digitalocean-agent.gpg
+      chmod a+r /etc/apt/keyrings/digitalocean-agent.gpg
+      echo "deb [signed-by=/etc/apt/keyrings/digitalocean-agent.gpg] https://repos.insights.digitalocean.com/apt/do-agent/ main main" > /etc/apt/sources.list.d/digitalocean-agent.list
+      apt-get update -y
+      apt-get install -y do-agent
+    fi
     )
 
-  # --- /opt/oxytrip + clone infra repo (public keys / compose only; no env secrets) ---
+  # --- /opt/oxytrip + clone infra repo (compose / scripts only; no env secrets) ---
+  # Nothing from the clone is run or installed here, so it can follow main; it grants
+  # no access (see ssh_authorized_keys above).
   - |
     # Subshell: set -e must not leak into later runcmd items.
     (
@@ -165,11 +186,6 @@ runcmd:
       git -C /opt/oxytrip pull --ff-only || true
     fi
     chown -R deploy:deploy /opt/oxytrip
-    # Keep authorized_keys on the host in sync with the repo copy when present
-    if [ -f /opt/oxytrip/provision/authorized_keys ]; then
-      install -d -m 0700 -o deploy -g deploy /home/deploy/.ssh
-      install -m 0600 -o deploy -g deploy /opt/oxytrip/provision/authorized_keys /home/deploy/.ssh/authorized_keys
-    fi
     )
 
 final_message: |

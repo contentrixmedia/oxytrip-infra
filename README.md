@@ -16,6 +16,7 @@ env/frontend.env.example
 env/panel.env.example
 scripts/stack.sh
 scripts/healthcheck.sh
+scripts/backup-bot-db.sh            # nightly support-bot database backup (+ restore)
 ```
 
 Sibling repos (not submodules):
@@ -73,7 +74,7 @@ docker login ghcr.io
 ./scripts/healthcheck.sh https://localhost
 ```
 
-`compose/staging.yml` and `compose/prod.yml` mount a named volume at the frontend's `/app/.next/cache` so the ISR and image cache survive restarts.
+`compose/staging.yml` and `compose/prod.yml` mount a named volume at the frontend's `/app/.next/cache` so the ISR and image cache survive restarts. The frontend runs as the image's `nextjs` user (1001:1001); the one-shot `frontend-cache-perms` service chowns that volume as root first and exits (it shows as `Exited (0)` in `ps` - that is expected).
 
 ## Production run
 
@@ -101,6 +102,9 @@ docker login ghcr.io
 | `./scripts/stack.sh logs local` | Follow logs |
 | `./scripts/stack.sh ps local` | Container status |
 | `./scripts/healthcheck.sh <base-url>` | Monitoring probe through Caddy |
+| `sudo ./scripts/backup-bot-db.sh` | Back up the bot's SQLite (chats) to `backups/bot/`, 14 kept, optional encrypted off-site copy |
+| `sudo ./scripts/backup-bot-db.sh install-cron` | Run that nightly (23:40 UTC); log `/var/log/oxytrip-bot-backup.log` |
+| `sudo ./scripts/backup-bot-db.sh restore <file>` | Put a backup back into the panel's volume (stops/starts the panel) |
 
 ## Ports (from Dockerfiles)
 

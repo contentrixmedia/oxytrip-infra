@@ -38,5 +38,14 @@ jobs:
           sudo apt-get install -y -qq cloud-init
           cloud-init schema --config-file provision/cloud-init.yaml
 
+      # Review 6 Nov 2026: cloud-init installs only the keys embedded in its own
+      # users: block (it no longer copies provision/authorized_keys from the clone).
+      # The two lists must not drift apart.
+      - name: authorized_keys matches cloud-init
+        run: |
+          diff <(grep -v '^#' provision/authorized_keys | grep -E '^ssh-' | awk '{print $1, $2}' | sort) \
+               <(grep -oE 'ssh-(ed25519|rsa|ecdsa[^ ]*) [A-Za-z0-9+/=]+' provision/cloud-init.yaml | sort) \
+            || { echo "::error::provision/authorized_keys and cloud-init.yaml ssh_authorized_keys differ"; exit 1; }
+
       - name: Shell scripts parse
         run: for f in provision/*.sh scripts/*.sh; do bash -n "$f"; done

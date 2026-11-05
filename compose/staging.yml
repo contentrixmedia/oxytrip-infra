@@ -23,13 +23,27 @@ services:
       retries: 5
       start_period: 20s
 
+  # Same as prod.yml (review 6 Nov 2026): a one-shot root chown of the cache volume,
+  # then the frontend runs as nextjs (1001:1001) instead of starting as root.
+  frontend-cache-perms:
+    image: ghcr.io/contentrixmedia/oxytrip-site:${FRONTEND_TAG:?set FRONTEND_TAG}
+    pull_policy: missing
+    user: "0:0"
+    entrypoint: ["chown", "-R", "1001:1001", "/app/.next/cache"]
+    restart: "no"
+    network_mode: none
+    volumes:
+      - frontend_next_cache:/app/.next/cache
+
   frontend:
     image: ghcr.io/contentrixmedia/oxytrip-site:${FRONTEND_TAG:?set FRONTEND_TAG}
     pull_policy: always
-    # Entrypoint starts as root only to chown the cache volume, then drops to uid 1001.
-    user: "0:0"
+    user: "1001:1001"
     volumes:
       - frontend_next_cache:/app/.next/cache
+    depends_on:
+      frontend-cache-perms:
+        condition: service_completed_successfully
 
   panel:
     image: ghcr.io/contentrixmedia/oxytrip-cms:${PANEL_TAG:?set PANEL_TAG}
