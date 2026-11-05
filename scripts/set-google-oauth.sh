@@ -26,7 +26,12 @@ esac
 
 escape() { printf '%s' "$1" | sed 's/\$/$$/g'; }
 
-cp -p "$ENV_FILE" "${ENV_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+# The backup is a full copy of the live secrets: owner-only, like the file itself
+# (cp -p would keep whatever mode env/frontend.env had). .gitignore covers env/*.env*
+# so it cannot be committed (review 6 Nov 2026).
+BACKUP="${ENV_FILE}.bak.$(date +%Y%m%d%H%M%S)"
+(umask 077 && cp "$ENV_FILE" "$BACKUP")
+chmod 600 "$BACKUP"
 
 set_var() {
   local key="$1" value; value="$(escape "$2")"
