@@ -83,8 +83,12 @@ services:
         condition: service_started
       panel:
         condition: service_started
+    # Caddy has no certificate for 127.0.0.1, so a TLS check against it is reset every time ("ssl_client:
+    # SSL_connect … Connection reset by peer"): the edge showed unhealthy while it served every site (checked
+    # 6 Nov 2026 – oxytrip.com 200). The check now asks only whether Caddy listens on 443 and 80; no TLS, so no
+    # ssl_client helper is left behind either.
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "--no-check-certificate", "https://127.0.0.1/"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 443 && nc -z 127.0.0.1 80"]
       interval: 15s
       timeout: 5s
       retries: 5
