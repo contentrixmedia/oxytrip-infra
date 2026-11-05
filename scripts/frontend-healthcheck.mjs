@@ -6,8 +6,9 @@ const REQUIRED = ['PAYLOAD_API_URL', 'NEXTAUTH_SECRET', 'SITE_URL'];
 const REQUIRED_IN_PROD = [
   'REVALIDATION_SECRET',
   'BOT_WEBHOOK_SECRET',
-  'TRIPSCRIPT_BASE_URL',
-  'TRIPSCRIPT_API_KEY',
+  // the site's key to Centoway (oxytrip-site src/lib/env.ts). TripScript was cut off on 5 Nov 2026 and the
+  // site's /api/health no longer reports its keys - listing them here marked a working site unhealthy.
+  'CENTOWAY_API_KEY',
 ];
 
 async function main() {
