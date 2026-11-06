@@ -64,8 +64,9 @@ services:
   edge:
     # Review 6 Nov 2026: pinned. caddy:2-alpine moved under us on every pull - the
     # live edge could change Caddy version (and behaviour) on any `up --pull always`
-    # without a commit. Bump deliberately; caddy validate the Caddyfile on the new one.
-    image: caddy:2.10.2-alpine
+    # without a commit. Bump deliberately; caddy validate the Caddyfile on the new one. 2.11.8 is what the live
+    # edge already runs (caddy version on the server, 6 Nov 2026) - 2.10.2 would have been a downgrade.
+    image: caddy:2.11.8-alpine
     restart: unless-stopped
     # Caddy runs as PID 1 and never reaps orphaned children. The healthcheck below
     # runs busybox wget, whose ssl_client helper is orphaned on every failed TLS
