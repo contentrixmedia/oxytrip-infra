@@ -40,7 +40,6 @@ users:
     # provision/authorized_keys must list exactly the same keys (the lint workflow
     # checks); change both together.
     ssh_authorized_keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILIBbBwx5z2jgsYZ+SQly75qYgJWg9iMB5XlOryDjS2N parastoo-oxytrip
       - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICV9Y43IRoT83EDrA3tnJcoAejaAdFzmy9O5yV1mWY4I parastoo-matebook
 
 # Prefer the fragment under sshd_config.d (Ubuntu 24.04). disable_root / ssh_pwauth

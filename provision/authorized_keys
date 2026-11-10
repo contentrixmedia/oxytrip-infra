@@ -1,4 +1,3 @@
 # Public SSH keys authorized for the deploy user.
 # Add one key per line. Never commit private keys.
-ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILIBbBwx5z2jgsYZ+SQly75qYgJWg9iMB5XlOryDjS2N parastoo-oxytrip
 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICV9Y43IRoT83EDrA3tnJcoAejaAdFzmy9O5yV1mWY4I parastoo-matebook
