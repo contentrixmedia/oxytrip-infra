@@ -49,3 +49,20 @@ jobs:
 
       - name: Shell scripts parse
         run: for f in provision/*.sh scripts/*.sh; do bash -n "$f"; done
+
+      # The edge Caddy serves oxytrip.com and panel.oxytrip.com. A Caddyfile typo used to show only on the
+      # server, as a site that does not come back after `up prod`. Validate it with the exact Caddy image the
+      # compose file pins (read from docker-compose.base.yml, so a version bump is checked on the new one), with
+      # placeholder domains for the env the server provides, and prove the check bites: a copy with an
+      # unknown directive must be refused.
+      - name: Edge Caddyfile validates on the pinned Caddy
+        run: |
+          img=$(grep -oE 'image: caddy:[^ ]+' compose/docker-compose.base.yml | head -1 | cut -d' ' -f2)
+          [ -n "$img" ] || { echo "::error::no caddy image found in compose/docker-compose.base.yml"; exit 1; }
+          check() { docker run --rm -e SITE_DOMAIN=example.com -e PANEL_DOMAIN=panel.example.com -e ACME_EMAIL=ops@example.com \
+            -v "$1:/etc/caddy/Caddyfile:ro" "$img" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile; }
+          check "$PWD/caddy/Caddyfile"
+          { cat caddy/Caddyfile; printf '\n:9999 {\n\tno_such_directive\n}\n'; } > "$RUNNER_TEMP/Caddyfile.broken"
+          if check "$RUNNER_TEMP/Caddyfile.broken"; then
+            echo "::error::caddy validate accepted a broken Caddyfile - the check above proves nothing"; exit 1
+          fi
